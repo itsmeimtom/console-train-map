@@ -148,36 +148,14 @@ def parseVehInfo(service):
 
     output += "("
     if 'trainClass' in service:
-        c = service['trainClass'].lower()
-        if c == 'ol':
-            output += " London Metro"
-        elif c == 'ou':
-            output += " Unad Ordinary Passenger"
-        elif c == 'oo':
-            output += " Ordinary Passenger"
-        elif c == 'os' or c == 'es':
-            output += " Staff Train"
-        elif c == 'xu':
-            output += " Unad Express Passenger"
-        elif c == 'xx':
-            output += " Express Passenger"
-        elif c == 'xz':
-            output += " Domestic Sleeper"
-        elif c == 'br':
-            output += " Rail Replacement Bus due to Works" 
-        elif c == 'bs':
-            output += " Bus Service"
-        elif c == 'ss':
-            output += " Ship"
-        elif c == 'ee' or c == 'el':
-            output += " Empty Coaching Stock"
-        else:
-            output += " Other Type"
+        output += service['trainClass']
+    else:
+        output += "Characteristics Unknown"
 
-        if 'powerType' in service:
-            output += " %s"%service['powerType']
-        else:
-            output += "Power Unknown"
+    if 'powerType' in service:
+        output += " %s"%service['powerType']
+    else:
+        output += " Power Unknown"
 
     output += ")"
     return output
