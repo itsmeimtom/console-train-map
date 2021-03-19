@@ -39,16 +39,11 @@ def rttReq(endpoint):
 
 def showServices(fromStation, toStation):
     dateString = date.today().strftime("%Y/%m/%d")
-    try:
-        services = rttReq("search/%s/to/%s/%s"%(fromStation.upper(),toStation.upper(),dateString))
-    except:
-        print("\n/!\\ one or both of those station codes didn't seem right, try again?\n")
-        return menu_askForStations()
+    services = rttReq("search/%s/to/%s/%s"%(fromStation.upper(),toStation.upper(),dateString))
 
     if not 'location' in services or not 'filter' in services:
         print("\n/!\\ one or both of those station codes didn't seem right, try again?\n")
         return menu_askForStations()
-
 
     clearScreen()
     print("\nToday's departures between %s and %s:"%(services['location']['name'],services['filter']['destination']['name']))
