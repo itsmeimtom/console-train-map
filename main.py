@@ -45,10 +45,14 @@ def trainInfoLoop(uid):
     
     dateString = date.today().strftime("%Y/%m/%d")
     service = rttReq("service/%s/%s"%(uid,dateString))
+    vehicleInfo = parseVehInfo(service)
 
-    print("\033[1;31;40mRTT UID %s - %s"%(service['serviceUid'],service['runDate']))
+    print("\033[1;31;40mUID %s on %s"%(service['serviceUid'],service['runDate']))
     print("\033[1;35;40m%s %s to %s"%(service['origin'][0]['publicTime'],service['origin'][0]['description'],service['destination'][0]['description']))
-    print("%s %s"%(service['trainIdentity'],service['atocName']))
+    print("\033[1;35;40m     %s"%service['atocName'])
+    print("\033[1;31;40m     %s"%vehicleInfo)
+
+
 
     stations = []
     passedNum = 0
@@ -134,6 +138,48 @@ def giveUsAMap(stations, stationsPassed, stationToHL):
         # output += "%s/%s"%(colour,stations[line].strip())
         output += "%s\\ %s%s"%(colour,stations[line].strip(),colour)
 
+    return output
+
+def parseVehInfo(service):
+    output = service['serviceType'].upper()
+
+    if 'trainIdentity' in service:
+        output += " running to %s"%service['trainIdentity']
+
+    output += "("
+    if 'trainClass' in service:
+        c = service['trainClass'].lower()
+        if c == 'ol':
+            output += " London Metro"
+        elif c == 'ou':
+            output += " Unad Ordinary Passenger"
+        elif c == 'oo':
+            output += " Ordinary Passenger"
+        elif c == 'os' or c == 'es':
+            output += " Staff Train"
+        elif c == 'xu':
+            output += " Unad Express Passenger"
+        elif c == 'xx':
+            output += " Express Passenger"
+        elif c == 'xz':
+            output += " Domestic Sleeper"
+        elif c == 'br':
+            output += " Rail Replacement Bus due to Works" 
+        elif c == 'bs':
+            output += " Bus Service"
+        elif c == 'ss':
+            output += " Ship"
+        elif c == 'ee' or c == 'el':
+            output += " Empty Coaching Stock"
+        else:
+            output += " Other Type"
+
+        if 'powerType' in service:
+            output += " %s"%service['powerType']
+        else:
+            output += "Power Unknown"
+
+    output += ")"
     return output
 
 showServices(input('between > '), input('    and > '))
