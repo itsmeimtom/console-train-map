@@ -28,10 +28,22 @@ def clearScreen():
 
 #################################################################
 
+def throwErr(Err):
+    clearScreen()
+    print(f"\n/!\\ Error! {Err}\n")
+    return sys.exit()
+
+#################################################################
+
 def rttReq(endpoint):
     url = "https://api.rtt.io/api/v1/json/%s"%endpoint
     rtt = requests.get(url, 
         auth = HTTPBasicAuth(rttUser, rttPass))
+    
+    if '<h1>Not Found</h1>' in rtt.text:
+        throwErr(f"Computer said no, '{rtt.text}'")
+    elif rtt.status_code != 200:
+        throwErr(rtt.text)
 
     return json.loads(rtt.text)
 
