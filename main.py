@@ -8,7 +8,8 @@ import os
 from creds import *
 
 spaces = 1
-timeout = 20
+loopTime = 20
+usePoles = False
 
 colourHighlight = "\033[1;36;40m" # cyan
 colourPassed = "\033[1;30;40m" # dark grey
@@ -61,7 +62,7 @@ def trainInfoLoop(uid):
         if 'realtimeDepartureActual' in location:
             if location['realtimeDepartureActual'] == True:
                 # the the train has departed the station and we can use the realtime data
-                deptTime = "left %s"%location['realtimeDeparture']
+                deptTime = "departed %s"%location['realtimeDeparture']
                 passedNum = passedNum + 1
             else:
                 # we can use RTT's realtime guestimate if the train is early or late
@@ -82,8 +83,12 @@ def trainInfoLoop(uid):
         elif 'gbttBookedArrival' in location:
             # otherwise we can fallback to the timetabled time
             arrTime = "tt'd arrival %s"%location['gbttBookedArrival']
-        
-        times = "%s %s"%(arrTime, deptTime)
+
+        timesSep = ""
+        if len(arrTime) > 0 and len(deptTime) > 0:
+            timesSep = ", "
+
+        times = "%s%s%s"%(arrTime, timesSep, deptTime)
         
         status = ""
         if 'serviceLocation' in location:
@@ -91,12 +96,12 @@ def trainInfoLoop(uid):
             status = status.replace('APPR_STAT', 'Approaching Station').replace('APPR_PLAT', 'Approaching Platform').replace('AT_PLAT', 'At Platform').replace('DEP_PREP', 'Preparing to Depart').replace('DEP_READY', 'Ready to Depart')
             currentStation = passedNum
 
-        stationString = "%s (%s%s)"%(location['description'],status,times.strip())
+        stationString = "%s (%s%s)"%(location['description'],status.upper(),times.strip())
         stations.append(stationString)
 
     print(giveUsAMap(stations, passedNum, currentStation))
 
-    time.sleep(timeout)
+    time.sleep(loopTime)
     trainInfoLoop(uid)
 
         
@@ -107,15 +112,16 @@ def giveUsAMap(stations, stationsPassed, stationToHL):
     for line in range(totalStations):
         output += "\n"
 
-        # do poles        
         for pole in range(line):
-            colour = colourPassed
-            if pole == stationToHL:
-                colour = colourHighlight
-            elif pole >= stationsPassed:
-                colour = colourFuture
-            # output += "%s|%s"%(colour," "*spaces)
-            output += "%s"%(" "*spaces)
+            if usePoles == True:
+                colour = colourPassed
+                if pole == stationToHL:
+                    colour = colourHighlight
+                elif pole >= stationsPassed:
+                    colour = colourFuture
+                output += "%s|%s"%(colour," "*spaces)
+            else:
+                output += "%s"%(" "*spaces)
 
         # do current station name
         if line == stationToHL:
@@ -130,7 +136,5 @@ def giveUsAMap(stations, stationsPassed, stationToHL):
 
     return output
 
-#showServices(input('between > '), input('    and > '))
-#trainInfoLoop(input('enter train uid > '))
-
-trainInfoLoop("C15302")
+showServices(input('between > '), input('    and > '))
+trainInfoLoop(input('enter train uid > '))
