@@ -48,7 +48,7 @@ def showServices(fromStation, toStation):
     clearScreen()
     print("\nToday's departures between %s and %s:"%(services['location']['name'],services['filter']['destination']['name']))
 
-    if not services['services'] == 0:
+    if not services['services']:
         print("\n/!\\ there are no services between these stations, please try again:\n")
         return menu_askForStations()
 
