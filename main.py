@@ -1,11 +1,10 @@
-import requests 
+import requests,time,json,os,re,sys
 from requests.auth import HTTPBasicAuth 
 from datetime import date
-import time
-import json
-import os
 
 from creds import *
+
+#################################################################
 
 spaces = 1
 loopTime = 20
@@ -15,8 +14,19 @@ colourHighlight = "\033[1;36;40m" # cyan
 colourPassed = "\033[1;30;40m" # dark grey
 #colourPassed = "\033[1;31;40m" # bright red
 colourFuture = "\033[1;37;40m" # white
-colourBold = "\033[1m"
-colourReset = "\033[0m"
+colourTitle1 = "\033[1;31;40m" # bright red
+colourTitle2 = "\033[1;35;40m" # magenta
+colourReset = "\033[0;37;40m"
+
+#################################################################
+
+def clearScreen():
+    if os.name == 'nt': 
+        os.system('cls')
+    else:
+        os.system('clear')
+
+#################################################################
 
 def rttReq(endpoint):
     url = "https://api.rtt.io/api/v1/json/%s"%endpoint
@@ -25,12 +35,29 @@ def rttReq(endpoint):
 
     return json.loads(rtt.text)
 
+#################################################################
 
 def showServices(fromStation, toStation):
     dateString = date.today().strftime("%Y/%m/%d")
-    services = rttReq("search/%s/to/%s/%s"%(fromStation.upper(),toStation.upper(),dateString))
-    
-    print("Today's departures between %s and %s"%(services['location']['name'],services['filter']['destination']['name']))
+    try:
+        services = rttReq("search/%s/to/%s/%s"%(fromStation.upper(),toStation.upper(),dateString))
+    except:
+        print("\n/!\\ one or both of those station codes didn't seem right, try again?\n")
+        return menu_askForStations()
+
+    if not 'location' in services or not 'filter' in services:
+        print("\n/!\\ one or both of those station codes didn't seem right, try again?\n")
+        return menu_askForStations()
+
+
+    clearScreen()
+    print("\nToday's departures between %s and %s:"%(services['location']['name'],services['filter']['destination']['name']))
+
+    if not services['services'] == 0:
+        print("\n/!\\ there are no services between these stations, please try again:\n")
+        return menu_askForStations()
+
+    print("  UID  | Dept |  Dest (Operator)")
 
     serviceListing = ""
     for service in services['services']:
@@ -39,18 +66,19 @@ def showServices(fromStation, toStation):
 
     print(serviceListing)
 
+#################################################################
 
 def trainInfoLoop(uid):
-    clear = os.system('clear')
-    
+    clearScreen()
+
     dateString = date.today().strftime("%Y/%m/%d")
-    service = rttReq("service/%s/%s"%(uid,dateString))
+    service = rttReq("service/%s/%s"%(uid.upper(),dateString))
     vehicleInfo = parseVehInfo(service)
 
-    print("\033[1;31;40mUID %s on %s"%(service['serviceUid'],service['runDate']))
-    print("\033[1;35;40m%s %s to %s"%(service['origin'][0]['publicTime'],service['origin'][0]['description'],service['destination'][0]['description']))
-    print("\033[1;35;40m     %s"%service['atocName'])
-    print("\033[1;31;40m     %s"%vehicleInfo)
+    print("%sUID %s on %s"%(colourTitle1, service['serviceUid'],service['runDate']))
+    print("%s%s %s to %s"%(colourTitle2, service['origin'][0]['publicTime'],service['origin'][0]['description'],service['destination'][0]['description']))
+    print("%s%s"%(colourTitle2, service['atocName']))
+    print("%s%s"%(colourTitle1, vehicleInfo))
 
 
 
@@ -97,7 +125,7 @@ def trainInfoLoop(uid):
         status = ""
         if 'serviceLocation' in location:
             status = "%s - "%location['serviceLocation']
-            status = status.replace('APPR_STAT', 'Approaching Station').replace('APPR_PLAT', 'Approaching Platform').replace('AT_PLAT', 'At Platform').replace('DEP_PREP', 'Preparing to Depart').replace('DEP_READY', 'Ready to Depart')
+            status = status.replace("APPR_STAT", "Approaching Station").replace("APPR_PLAT", "Approaching Platform").replace("AT_PLAT", "At Platform").replace("DEP_PREP", "Preparing to Depart").replace("DEP_READY", "Ready to Depart")
             currentStation = passedNum
 
         stationString = "%s (%s%s)"%(location['description'],status.upper(),times.strip())
@@ -108,6 +136,7 @@ def trainInfoLoop(uid):
     time.sleep(loopTime)
     trainInfoLoop(uid)
 
+#################################################################
         
 def giveUsAMap(stations, stationsPassed, stationToHL):
     output = ""
@@ -140,6 +169,8 @@ def giveUsAMap(stations, stationsPassed, stationToHL):
 
     return output
 
+#################################################################
+
 def parseVehInfo(service):
     output = service['serviceType'].upper()
 
@@ -161,12 +192,53 @@ def parseVehInfo(service):
 
     return output
 
+#################################################################
+
+def menu_askForStations():
+    print("let's find you a service! which stations should we look for trains between?")
+    print("enter 3-digit crs codes, you can find these at nationalrail.co.uk")
+    inputFrom = input("from > ")
+    inputTo = input("  to > ")
+
+    if not re.search("[a-zA-Z]{3}", inputFrom):
+        print("that does not look like a valid from station code, perhaps try again?")
+        return menu_askForStations()
+    if not re.search("[a-zA-Z]{3}", inputTo):
+        print("that does not look like a valid to station code, perhaps try again?")
+        return menu_askForStations()
+    
+    showServices(inputFrom, inputTo)
+    menu_askForUID()
+    
+#################################################################
+
+def menu_askForUID(firstUid=None):
+    if firstUid:
+        inputUid = firstUid
+    else:
+        inputUid = input("enter train uid > ")
+
+    if not re.search("[A-Za-z][0-9]{5}", inputUid):
+        print("are you sure that's a valid uid? give it another go!")
+        return menu_askForUID()
+    else:
+        trainInfoLoop(inputUid)
 
 
-print('if you already know the UID of a train to watch, press enter')
-menu = input('otherwise, type s and press enter to find a service: ')
+#################################################################
 
-if menu == "s":
-    showServices(input('between > '), input('    and > '))
+try:
+    print ("\033[1;36;40m                TomR.me - ConsoleTrainMap                ")
+    print("\033[1;33;40m/===   press ↵enter to start searching for a train   ===\\")
+    print("\033[1;33;40mif you already know the uid of train, type it and press ↵")
 
-trainInfoLoop(input('enter train uid > '))
+    menu = input()
+
+    if len(menu) < 1:
+        menu_askForStations()
+    else:
+        menu_askForUID(menu)
+except KeyboardInterrupt:
+    print(colourReset)
+    sys.exit()
+
