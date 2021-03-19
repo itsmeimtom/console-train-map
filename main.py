@@ -143,10 +143,7 @@ def giveUsAMap(stations, stationsPassed, stationToHL):
 def parseVehInfo(service):
     output = service['serviceType'].upper()
 
-    if 'trainIdentity' in service:
-        output += " running to %s"%service['trainIdentity']
-
-    output += "("
+    output += " ("
     if 'trainClass' in service:
         output += service['trainClass']
     else:
@@ -158,7 +155,18 @@ def parseVehInfo(service):
         output += " Power Unknown"
 
     output += ")"
+
+    if 'trainIdentity' in service:
+        output += " running to %s"%service['trainIdentity']
+
     return output
 
-showServices(input('between > '), input('    and > '))
+
+
+print('if you already know the UID of a train to watch, press enter')
+menu = input('otherwise, type s and press enter to find a service: ')
+
+if menu == "s":
+    showServices(input('between > '), input('    and > '))
+
 trainInfoLoop(input('enter train uid > '))
